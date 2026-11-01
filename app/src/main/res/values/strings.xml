@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">NOVACHAT</string>
+    <string name="tagline">African Super App</string>
+    <string name="nav_chats">Chats</string>
+    <string name="nav_contacts">Contacts</string>
+    <string name="nav_discover">Discover</string>
+    <string name="nav_novapay">NOVA PAY</string>
+    <string name="nav_me">Me</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_ride">NOVA RIDE</string>
+    <string name="nav_market">Market</string>
+</resources>

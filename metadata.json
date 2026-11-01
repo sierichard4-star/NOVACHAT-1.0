@@ -1,0 +1,6 @@
+{
+  "name": "NOVACHAT",
+  "description": "The premier African Super App for messaging, digital payments, live commerce, and daily lifestyle services.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

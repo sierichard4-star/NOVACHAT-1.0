@@ -1,0 +1,173 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             (!('handle' in data) || data.handle == null || (data.handle is string && data.handle.size() <= 60)) &&
+             (!('photoUrl' in data) || data.photoUrl == null || (data.photoUrl is string && data.photoUrl.size() <= 1000)) &&
+             (!('avatarUrl' in data) || data.avatarUrl == null || (data.avatarUrl is string && data.avatarUrl.size() <= 1000)) &&
+             (!('phone' in data) || data.phone == null || (data.phone is string && data.phone.size() <= 40)) &&
+             (!('phoneNumber' in data) || data.phoneNumber == null || (data.phoneNumber is string && data.phoneNumber.size() <= 40)) &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 120)) &&
+             (!('status' in data) || data.status == null || (data.status is string && data.status.size() <= 300)) &&
+             (!('content' in data) || data.content == null || (data.content is string && data.content.size() <= 500)) &&
+             (!('senderId' in data) || data.senderId == null || (data.senderId is string && data.senderId.size() <= 128)) &&
+             (!('isOnline' in data) || data.isOnline is bool) &&
+             (!('metadata' in data) || data.metadata == null || data.metadata is map) &&
+             (!('timestamp' in data) || data.timestamp == null || (data.timestamp is timestamp && data.timestamp <= request.time)) &&
+             (!('lastSeen' in data) || data.lastSeen == null || (data.lastSeen is timestamp && data.lastSeen <= request.time)) &&
+             (!('updatedAt' in data) || data.updatedAt == null || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidConversation(data) {
+      return data.isGroup is bool &&
+             data.participants is list && data.participants.size() >= 1 && data.participants.size() <= 100 &&
+             (!('name' in data) || data.name == null || (data.name is string && data.name.size() <= 120)) &&
+             (!('title' in data) || data.title == null || (data.title is string && data.title.size() <= 120)) &&
+             (!('adminUids' in data) || data.adminUids == null || (data.adminUids is list && data.adminUids.size() <= 50)) &&
+             (!('lastMessage' in data) || data.lastMessage == null || (data.lastMessage is string && data.lastMessage.size() <= 500)) &&
+             (!('content' in data) || data.content == null || (data.content is string && data.content.size() <= 500)) &&
+             (!('lastMessageTimestamp' in data) || data.lastMessageTimestamp == null || data.lastMessageTimestamp is timestamp) &&
+             (!('timestamp' in data) || data.timestamp == null || data.timestamp is timestamp) &&
+             (!('lastMessageSenderId' in data) || data.lastMessageSenderId == null || (data.lastMessageSenderId is string && data.lastMessageSenderId.size() <= 128)) &&
+             (!('senderId' in data) || data.senderId == null || (data.senderId is string && data.senderId.size() <= 128)) &&
+             (!('typing' in data) || data.typing == null || data.typing is map) &&
+             (!('metadata' in data) || data.metadata == null || data.metadata is map) &&
+             (!('updatedAt' in data) || data.updatedAt == null || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidMessage(data) {
+      return data.conversationId is string && data.conversationId.size() <= 128 &&
+             data.senderId is string && data.senderId.size() <= 128 &&
+             ((!('text' in data) || (data.text is string && data.text.size() <= 5000)) &&
+              (!('content' in data) || (data.content is string && data.content.size() <= 5000))) &&
+             data.type is string && (data.type in ['TEXT', 'VOICE', 'IMAGE', 'MOMO_TRANSFER', 'CALL_LOG', 'SYSTEM']) &&
+             (!('senderName' in data) || (data.senderName is string && data.senderName.size() <= 80)) &&
+             (!('senderAvatar' in data) || data.senderAvatar == null || (data.senderAvatar is string && data.senderAvatar.size() <= 1000)) &&
+             (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
+             (!('mediaUrl' in data) || data.mediaUrl == null || (data.mediaUrl is string && data.mediaUrl.size() <= 2000)) &&
+             (!('voiceDurationSeconds' in data) || (data.voiceDurationSeconds is int && data.voiceDurationSeconds >= 0 && data.voiceDurationSeconds <= 3600)) &&
+             (!('momoAmountGhs' in data) || (data.momoAmountGhs is number && data.momoAmountGhs >= 0)) &&
+             (!('replyToId' in data) || data.replyToId == null || (data.replyToId is string && data.replyToId.size() <= 128)) &&
+             (!('replyToText' in data) || data.replyToText == null || (data.replyToText is string && data.replyToText.size() <= 500)) &&
+             (!('replyToSender' in data) || data.replyToSender == null || (data.replyToSender is string && data.replyToSender.size() <= 80)) &&
+             (!('reactions' in data) || data.reactions == null || data.reactions is map) &&
+             (!('readBy' in data) || data.readBy == null || (data.readBy is list && data.readBy.size() <= 100)) &&
+             (!('deliveredTo' in data) || data.deliveredTo == null || (data.deliveredTo is list && data.deliveredTo.size() <= 100)) &&
+             (!('participants' in data) || (data.participants is list && data.participants.size() <= 100)) &&
+             (!('metadata' in data) || data.metadata == null || data.metadata is map) &&
+             (!('timestamp' in data) || data.timestamp == null || data.timestamp is timestamp);
+    }
+
+    function isConversationParticipant(convId) {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/conversations/$(convId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+    }
+
+    // 1. User Profiles Collection
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'createdAt']) &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'handle', 'photoUrl', 'avatarUrl', 'phone', 'phoneNumber',
+                         'email', 'status', 'content', 'senderId', 'isOnline', 'metadata',
+                         'timestamp', 'lastSeen', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 2. Conversations Collection
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow list: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
+
+      allow create: if isSignedIn() &&
+                       request.auth.uid in incoming().participants &&
+                       incoming().keys().hasAll(['isGroup', 'participants', 'createdAt']) &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       isValidConversation(incoming());
+
+      allow update: if isSignedIn() &&
+                       request.auth.uid in existing().participants &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidConversation(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'title', 'participants', 'adminUids', 'lastMessage', 'content',
+                         'lastMessageTimestamp', 'timestamp', 'lastMessageSenderId', 'senderId',
+                         'typing', 'metadata', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && (
+        ('adminUids' in resource.data && request.auth.uid in resource.data.adminUids) ||
+        (!resource.data.isGroup && request.auth.uid in resource.data.participants)
+      );
+
+      // Subcollection: Real-time Messages
+      match /messages/{messageId} {
+        allow get, list: if isSignedIn() && (
+          ('participants' in resource.data && request.auth.uid in resource.data.participants) ||
+          isConversationParticipant(conversationId)
+        );
+
+        allow create: if isSignedIn() &&
+                         incoming().senderId == request.auth.uid &&
+                         isConversationParticipant(conversationId) &&
+                         incoming().keys().hasAll(['conversationId', 'senderId', 'type', 'createdAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidMessage(incoming());
+
+        allow update: if isSignedIn() &&
+                         isConversationParticipant(conversationId) &&
+                         incoming().senderId == existing().senderId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (incoming().diff(existing()).affectedKeys().hasOnly([
+                           'reactions', 'readBy', 'deliveredTo', 'metadata'
+                         ]));
+
+        allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
+      }
+    }
+  }
+}

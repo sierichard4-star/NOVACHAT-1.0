@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with display info, verification status, and real-time presence.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "Display name of the user" },
+        "handle": { "type": "string", "description": "Username handle e.g. @kwesi_m" },
+        "photoUrl": { "type": "string", "description": "Avatar URL" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "status": { "type": "string", "description": "Bio or status headline" },
+        "isOnline": { "type": "boolean", "description": "Real-time online presence" },
+        "lastSeen": { "type": "string", "format": "date-time", "description": "Last presence timestamp" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "createdAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "1:1 or Group conversation thread metadata with typing status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Conversation ID" },
+        "isGroup": { "type": "boolean", "description": "Whether this is a group thread" },
+        "name": { "type": "string", "description": "Conversation or group title" },
+        "participants": {
+          "type": "array",
+          "description": "List of participant user IDs authorized in this thread"
+        },
+        "adminUids": {
+          "type": "array",
+          "description": "List of group admin user IDs"
+        },
+        "lastMessage": { "type": "string", "description": "Snippet of latest message" },
+        "lastMessageTimestamp": { "type": "string", "format": "date-time" },
+        "lastMessageSenderId": { "type": "string", "description": "Sender UID of latest message" },
+        "typing": { "type": "object", "description": "Map of user ID to typing timestamp" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["isGroup", "participants", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Real-time chat message with text, media, voice notes, reactions, and read receipts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Message ID" },
+        "conversationId": { "type": "string", "description": "Parent conversation ID" },
+        "senderId": { "type": "string", "description": "UID of author" },
+        "senderName": { "type": "string", "description": "Display name of author" },
+        "senderAvatar": { "type": "string", "description": "Avatar of author" },
+        "text": { "type": "string", "description": "Message body or caption" },
+        "type": {
+          "type": "string",
+          "enum": ["TEXT", "VOICE", "IMAGE", "MOMO_TRANSFER", "CALL_LOG", "SYSTEM"],
+          "description": "Message content type"
+        },
+        "imageUrl": { "type": "string", "description": "Optional image URL" },
+        "voiceDurationSeconds": { "type": "integer", "description": "Duration for voice notes" },
+        "momoAmountGhs": { "type": "number", "description": "Amount for MoMo transfer slips" },
+        "replyToId": { "type": "string", "description": "ID of parent message being replied to" },
+        "replyToText": { "type": "string", "description": "Text of quoted reply" },
+        "replyToSender": { "type": "string", "description": "Sender of quoted reply" },
+        "reactions": { "type": "object", "description": "Map of userId to reaction emoji" },
+        "readBy": { "type": "array", "description": "List of userIds who read this message" },
+        "deliveredTo": { "type": "array", "description": "List of userIds who received this message" },
+        "participants": { "type": "array", "description": "Denormalized participant UIDs for low-latency rule checks" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversationId", "senderId", "text", "type", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles and presence"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "1:1 and group conversation threads"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Real-time messages belonging to a conversation"
+    }
+  }
+}
